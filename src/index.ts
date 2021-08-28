@@ -15,7 +15,7 @@ type FixtureInit<
 type Test<BaseTest extends CallableFunction, T extends Fixtures> = {
   [key in keyof BaseTest]: BaseTest[key];
 } & {
-  (name: string, testFunc: (fixtures: T) => Promise<void> | void): void;
+  (name: string, testFunc: (fixtures: T) => unknown): void;
   extend<U extends Fixtures>(
     fixtureInit: FixtureInit<T, U>
   ): Test<BaseTest, T & U>;
@@ -47,7 +47,7 @@ const wrap = <BaseTest extends CallableFunction, T extends Fixtures>(
     apply(
       target,
       thisArg: unknown,
-      [name, testFunc]: [string, (fixtures: T) => Promise<void> | void],
+      [name, testFunc]: [string, (fixtures: T) => unknown],
     ) {
       baseTest(title ? `${title} - ${name}` : name, async () => {
         const fixtures = await fixtureInitList.reduce(
@@ -61,7 +61,7 @@ const wrap = <BaseTest extends CallableFunction, T extends Fixtures>(
     },
   }) as {
     [key in keyof BaseTest]: BaseTest[key];
-  } & { (name: string, testFunc: (fixtures: T) => Promise<void> | void): void };
+  } & { (name: string, testFunc: (fixtures: T) => unknown): void };
 
   return Object.assign(proxy, {
     extend<U extends Fixtures>(
