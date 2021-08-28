@@ -11,7 +11,7 @@
   "bugs": "https://github.com/PaperStrike/Pjax/issues",
   "license": "ISC",
   "author": "PaperStrike",
-  "main": "./src/index.ts",
+  "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "repository": "github:PaperStrike/test-fixtures-wrap",
   "scripts": {
