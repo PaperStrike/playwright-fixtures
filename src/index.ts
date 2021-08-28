@@ -16,10 +16,13 @@ type Test<BaseTest extends CallableFunction, T extends Fixtures> = {
   [key in keyof BaseTest]: BaseTest[key];
 } & {
   (name: string, testFunc: (fixtures: T) => Promise<void> | void): void;
-  extend: <U extends Fixtures>(
+  extend<U extends Fixtures>(
+    fixtureInit: FixtureInit<T, U>
+  ): Test<BaseTest, T & U>;
+  extend<U extends Fixtures>(
     title: string,
     fixtureInit: FixtureInit<T, U>
-  ) => Test<BaseTest, T & U>;
+  ): Test<BaseTest, T & U>;
 };
 
 const initFixture = async <T extends Fixtures, U extends Fixtures>(
@@ -46,7 +49,7 @@ const wrap = <BaseTest extends CallableFunction, T extends Fixtures>(
       thisArg: unknown,
       [name, testFunc]: [string, (fixtures: T) => Promise<void> | void],
     ) {
-      baseTest(`${title} - ${name}`, async () => {
+      baseTest(title ? `${title} - ${name}` : name, async () => {
         const fixtures = await fixtureInitList.reduce(
           async (initializing: Promise<Partial<T>>, init): Promise<Partial<T>> => (
             initFixture(await initializing, init)
@@ -61,13 +64,22 @@ const wrap = <BaseTest extends CallableFunction, T extends Fixtures>(
   } & { (name: string, testFunc: (fixtures: T) => Promise<void> | void): void };
 
   return Object.assign(proxy, {
-    extend: <U extends Fixtures>(extendTitle: string, fixtureInit: FixtureInit<T, U>) => (
-      wrap<BaseTest, T & U>(
+    extend<U extends Fixtures>(
+      extendTitle: string | FixtureInit<T, U>,
+      fixtureInit?: FixtureInit<T, U>,
+    ) {
+      let parsedTitle = extendTitle;
+      let parsedInit = fixtureInit;
+      if (typeof parsedTitle !== 'string') {
+        parsedInit = parsedTitle;
+        parsedTitle = '';
+      }
+      return wrap<BaseTest, T & U>(
         proxy,
-        extendTitle,
-        [...fixtureInitList, fixtureInit] as FixtureInit<Partial<T & U>>[],
-      )
-    ),
+        parsedTitle,
+        [...fixtureInitList, parsedInit] as FixtureInit<Partial<T & U>>[],
+      );
+    },
   });
 };
 
