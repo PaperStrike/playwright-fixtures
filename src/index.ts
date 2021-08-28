@@ -1,7 +1,7 @@
 type FixturePropInit<
   Base extends Fixtures,
   Prop,
-  > = Prop | ((context: Base) => Promise<Prop> | Prop);
+> = Prop | ((context: Base) => Promise<Prop> | Prop);
 
 type Fixtures = Record<string, unknown>;
 
@@ -12,17 +12,23 @@ type FixtureInit<
   [name in keyof Extend]: FixturePropInit<Base, Extend[name]>;
 };
 
-type Test<BaseTest extends CallableFunction, T extends Fixtures> = {
-  [key in keyof BaseTest]: BaseTest[key];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type BaseTest = (name: string, testFunc: (...args: any) => any) => any;
+
+type Test<Base extends BaseTest, T extends Fixtures> = {
+  [key in keyof Base]: Base[key];
 } & {
-  (name: string, testFunc: (fixtures: T) => unknown): void;
+  (
+    name: string,
+    testFunc: (fixtures: T) => ReturnType<Parameters<Base>[1]>
+  ): ReturnType<Base>;
   extend<U extends Fixtures>(
     fixtureInit: FixtureInit<T, U>
-  ): Test<BaseTest, T & U>;
+  ): Test<Base, T & U>;
   extend<U extends Fixtures>(
     title: string,
     fixtureInit: FixtureInit<T, U>
-  ): Test<BaseTest, T & U>;
+  ): Test<Base, T & U>;
 };
 
 const initFixture = async <T extends Fixtures, U extends Fixtures>(
@@ -38,30 +44,37 @@ const initFixture = async <T extends Fixtures, U extends Fixtures>(
   return { ...base, ...extend as U };
 };
 
-const wrap = <BaseTest extends CallableFunction, T extends Fixtures>(
-  baseTest: BaseTest,
+const wrap = <Base extends BaseTest, T extends Fixtures>(
+  baseTest: Base,
   title: string,
   fixtureInitList: FixtureInit<Partial<T>>[],
-): Test<BaseTest, T> => {
+): Test<Base, T> => {
   const proxy = new Proxy(baseTest, {
-    apply(
+    apply: (
       target,
-      thisArg: unknown,
-      [name, testFunc]: [string, (fixtures: T) => unknown],
-    ) {
-      baseTest(title ? `${title} - ${name}` : name, async () => {
+      thisArg: ThisType<Parameters<Base>[1]>,
+      [name, testFunc]: [string, (fixtures: T) => ReturnType<Parameters<Base>[1]>],
+    ) => (
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
+      target(title ? `${title} - ${name}` : name, async () => {
         const fixtures = await fixtureInitList.reduce(
           async (initializing: Promise<Partial<T>>, init): Promise<Partial<T>> => (
             initFixture(await initializing, init)
           ),
           Promise.resolve({}),
         ) as T;
-        await testFunc(fixtures);
-      });
-    },
+        return testFunc.call(thisArg, fixtures);
+      })
+    ),
   }) as {
-    [key in keyof BaseTest]: BaseTest[key];
-  } & { (name: string, testFunc: (fixtures: T) => unknown): void };
+    [key in keyof Base]: Base[key];
+  } & {
+    (
+      this: ThisType<Parameters<Base>[1]>,
+      name: string,
+      testFunc: (fixtures: T) => ReturnType<Parameters<Base>[1]>
+    ): ReturnType<Base>;
+  };
 
   return Object.assign(proxy, {
     extend<U extends Fixtures>(
@@ -74,7 +87,7 @@ const wrap = <BaseTest extends CallableFunction, T extends Fixtures>(
         parsedInit = parsedTitle;
         parsedTitle = '';
       }
-      return wrap<BaseTest, T & U>(
+      return wrap<Base, T & U>(
         proxy,
         parsedTitle,
         [...fixtureInitList, parsedInit] as FixtureInit<Partial<T & U>>[],
