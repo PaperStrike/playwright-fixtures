@@ -34,7 +34,7 @@ const initFixture = async <T extends Fixtures, U extends Fixtures>(
     .map(async <K extends keyof U>([key, propInit]: [K, FixturePropInit<T, U[K]>]) => {
       extend[key] = (typeof propInit === 'function' ? await (propInit as CallableFunction)(base) : propInit) as U[K];
     });
-  await Promise.allSettled(propInitJobs);
+  await Promise.all(propInitJobs);
   return { ...base, ...extend as U };
 };
 
