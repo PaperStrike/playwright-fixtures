@@ -1,0 +1,30 @@
+{
+  "name": "test-fixtures-wrap",
+  "version": "0.0.0",
+  "description": "Wrap your tests with playwright-like test fixtures",
+  "keywords": [
+    "test",
+    "fixture",
+    "playwright",
+    "folio"
+  ],
+  "bugs": "https://github.com/PaperStrike/Pjax/issues",
+  "license": "ISC",
+  "author": "PaperStrike",
+  "main": "./src/index.ts",
+  "types": "./dist/index.d.ts",
+  "repository": "github:PaperStrike/test-fixtures-wrap",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "tsc"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^4.29.3",
+    "@typescript-eslint/parser": "^4.29.3",
+    "eslint": "^7.32.0",
+    "eslint-config-airbnb-base": "^14.2.1",
+    "eslint-config-airbnb-typescript": "^14.0.0",
+    "eslint-plugin-import": "^2.24.2",
+    "typescript": "^4.4.2"
+  }
+}

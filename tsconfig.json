@@ -1,0 +1,19 @@
+{
+  "compilerOptions": {
+    "declaration": true,
+    "declarationDir": "dist",
+    "emitDeclarationOnly": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "lib": ["es2021"],
+    "module": "esnext",
+    "moduleResolution": "node",
+    "newLine": "lf",
+    "skipLibCheck": true,
+    "strict": true,
+    "target": "es2021"
+  },
+  "exclude": [
+    "node_modules"
+  ]
+}
