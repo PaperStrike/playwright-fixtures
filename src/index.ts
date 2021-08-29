@@ -1,96 +1,131 @@
-type FixturePropInit<
-  Base extends Fixtures,
-  Prop,
-> = Prop | ((context: Base) => Promise<Prop> | Prop);
+type KeyValue = { [key: string]: unknown };
 
-type Fixtures = Record<string, unknown>;
+type TestFixture<R, Args extends KeyValue> = (
+  args: Args,
+  use: (r: R) => Promise<void>
+) => Promise<void> | void;
 
-type FixtureInit<
-  Base extends Fixtures,
-  Extend extends Fixtures = Record<string, never>,
-> = Partial<Base> & {
-  [name in keyof Extend]: FixturePropInit<Base, Extend[name]>;
-};
+type TestFixtureValue<R, Args extends KeyValue> = R | TestFixture<R, Args>;
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type BaseTest = (name: string, testFunc: (...args: any) => any) => any;
-
-type Test<Base extends BaseTest, T extends Fixtures> = {
-  [key in keyof Base]: Base[key];
+type Fixtures<T extends KeyValue, PT extends KeyValue = Record<string, never>> = {
+  [K in keyof PT]?: TestFixtureValue<PT[K], T & PT>;
 } & {
-  (
-    name: string,
-    testFunc: (fixtures: T) => ReturnType<Parameters<Base>[1]>
-  ): ReturnType<Base>;
-  extend<U extends Fixtures>(
-    fixtureInit: FixtureInit<T, U>
-  ): Test<Base, T & U>;
-  extend<U extends Fixtures>(
+  [K in keyof T]?: TestFixtureValue<T[K], T & PT>;
+};
+
+type BaseTest = (name: string, inner: (...args: unknown[]) => Promise<void> | void) => unknown;
+
+type Test<TestArgs extends KeyValue, B extends BaseTest = BaseTest> = {
+  [key in keyof B]: B[key];
+} & {
+  (name: string, inner: (args: TestArgs) => Promise<void> | void): void;
+  extend<T extends KeyValue = Record<string, never>>(
+    fixtures: Fixtures<T, TestArgs>
+  ): Test<TestArgs & T, B>;
+  extend<T extends KeyValue = Record<string, never>>(
     title: string,
-    fixtureInit: FixtureInit<T, U>
-  ): Test<Base, T & U>;
+    fixtures: Fixtures<T, TestArgs>
+  ): Test<TestArgs & T, B>;
 };
 
-const initFixture = async <T extends Fixtures, U extends Fixtures>(
-  base: T,
-  init: FixtureInit<U>,
-): Promise<T & U> => {
-  const extend = {} as Partial<U>;
-  const propInitJobs = Object.entries(init)
-    .map(async <K extends keyof U>([key, propInit]: [K, FixturePropInit<T, U[K]>]) => {
-      extend[key] = (typeof propInit === 'function' ? await (propInit as CallableFunction)(base) : propInit) as U[K];
-    });
-  await Promise.all(propInitJobs);
-  return { ...base, ...extend as U };
+const prepareFixtures = async <T extends KeyValue, Args extends KeyValue>(
+  base: Args,
+  init: Fixtures<T, Args>,
+): Promise<[Args & T, Promise<void>[], () => void]> => {
+  const extend = {} as Partial<T>;
+  let useResolve: () => void;
+  let usePromise: Promise<void>;
+  await new Promise<void>((construct) => {
+    usePromise = new Promise<void>((resolve) => { useResolve = resolve; construct(); });
+  });
+  const finishJobs: Promise<void>[] = [];
+  const prepareJobs = Object.entries(init)
+    .map(<K extends keyof T>([key, fixtureValue]: [K, Fixtures<T, Args>[K]]) => (
+      new Promise<void>((prepareValueResolve) => {
+        /**
+         * Check if it is callable.
+         * There isn't more standard and fast ways.
+         */
+        if (typeof fixtureValue === 'function') {
+          const useValue = async (value: T[K]) => {
+            extend[key] = value;
+            prepareValueResolve();
+            await usePromise;
+          };
+          finishJobs.push(
+            // Package to promise, another resolve in case of it dont use `useValue`.
+            Promise.resolve((fixtureValue as TestFixture<T[K], Args>)(base, useValue))
+              .then(prepareValueResolve),
+          );
+        }
+      })
+    ));
+  await Promise.all(prepareJobs);
+
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  return [{ ...base, ...extend as T }, finishJobs, useResolve!];
 };
 
-const wrap = <Base extends BaseTest, T extends Fixtures>(
+const wrap = <T extends KeyValue, Base extends BaseTest>(
   baseTest: Base,
   title: string,
-  fixtureInitList: FixtureInit<Partial<T>>[],
-): Test<Base, T> => {
+  fixturesList: Fixtures<Partial<T>>[],
+): Test<T, Base> => {
   const proxy = new Proxy(baseTest, {
     apply: (
       target,
-      thisArg: ThisType<Parameters<Base>[1]>,
-      [name, testFunc]: [string, (fixtures: T) => ReturnType<Parameters<Base>[1]>],
+      thisArg,
+      [name, inner]: [string, (fixtures: T) => Promise<void> | void],
     ) => (
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       target(title ? `${title} - ${name}` : name, async () => {
-        const fixtures = await fixtureInitList.reduce(
-          async (initializing: Promise<Partial<T>>, init): Promise<Partial<T>> => (
-            initFixture(await initializing, init)
-          ),
+        const finishList: [Promise<void>[], () => void][] = [];
+        const fixtures = await fixturesList.reduce(
+          async (initializing, init) => {
+            const [
+              initialized,
+              finishJobs,
+              finishFunc,
+            ] = await prepareFixtures(await initializing, init);
+            finishList.push([finishJobs, finishFunc]);
+            return initialized;
+          },
           Promise.resolve({}),
         ) as T;
-        return testFunc.call(thisArg, fixtures);
+        await inner(fixtures);
+        await finishList.reduceRight(
+          async (finishing: Promise<void>, [finishJobs, finishFunc]) => {
+            await finishing;
+            finishFunc();
+            await Promise.all(finishJobs);
+          },
+          Promise.resolve(),
+        );
       })
     ),
   }) as {
     [key in keyof Base]: Base[key];
   } & {
     (
-      this: ThisType<Parameters<Base>[1]>,
       name: string,
-      testFunc: (fixtures: T) => ReturnType<Parameters<Base>[1]>
+      inner: (fixtures: T) => Promise<void> | void
     ): ReturnType<Base>;
   };
 
   return Object.assign(proxy, {
-    extend<U extends Fixtures>(
-      extendTitle: string | FixtureInit<T, U>,
-      fixtureInit?: FixtureInit<T, U>,
+    extend<U extends KeyValue>(
+      extendTitle: string | Fixtures<U, T>,
+      extendFixtures: Fixtures<U, T> = {},
     ) {
       let parsedTitle = extendTitle;
-      let parsedInit = fixtureInit;
+      let parsedFixtures = extendFixtures;
       if (typeof parsedTitle !== 'string') {
-        parsedInit = parsedTitle;
+        parsedFixtures = parsedTitle;
         parsedTitle = '';
       }
-      return wrap<Base, T & U>(
+      return wrap<T & U, Base>(
         proxy,
         parsedTitle,
-        [...fixtureInitList, parsedInit] as FixtureInit<Partial<T & U>>[],
+        [...fixturesList, parsedFixtures] as Fixtures<Partial<T & U>>[],
       );
     },
   });
