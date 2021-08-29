@@ -7,22 +7,32 @@ type TestFixture<R, Args extends KeyValue> = (
 
 type TestFixtureValue<R, Args extends KeyValue> = R | TestFixture<R, Args>;
 
-type Fixtures<T extends KeyValue, PT extends KeyValue = Record<string, never>> = {
-  [K in keyof PT]?: TestFixtureValue<PT[K], T & PT>;
+// eslint-disable-next-line @typescript-eslint/ban-types
+type Fixtures<T extends KeyValue, PT extends KeyValue = {}> = {
+  [K in keyof PT]?: TestFixtureValue<PT[K], PT & T>;
 } & {
-  [K in keyof T]?: TestFixtureValue<T[K], T & PT>;
+  [K in keyof T]?: TestFixtureValue<T[K], PT & T>;
 };
 
 type BaseTest = (name: string, inner: (...args: unknown[]) => Promise<void> | void) => unknown;
 
-type Test<TestArgs extends KeyValue, B extends BaseTest = BaseTest> = {
+type Test<TestArgs extends KeyValue, B extends BaseTest> = {
   [key in keyof B]: B[key];
 } & {
-  (name: string, inner: (args: TestArgs) => Promise<void> | void): void;
-  extend<T extends KeyValue = Record<string, never>>(
+  (
+    name: string,
+    inner: (
+      this: ThisParameterType<Parameters<B>[1]>,
+      args: TestArgs,
+      ...baseArgs: Parameters<Parameters<B>[1]>
+    ) => Promise<void> | void,
+  ): void;
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  extend<T extends KeyValue = {}>(
     fixtures: Fixtures<T, TestArgs>
   ): Test<TestArgs & T, B>;
-  extend<T extends KeyValue = Record<string, never>>(
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  extend<T extends KeyValue = {}>(
     title: string,
     fixtures: Fixtures<T, TestArgs>
   ): Test<TestArgs & T, B>;
@@ -75,9 +85,9 @@ const wrapTest = <T extends KeyValue, Base extends BaseTest>(
     apply: (
       target,
       thisArg,
-      [name, inner]: [string, (fixtures: T) => Promise<void> | void],
+      [name, inner]: [string, (fixtures: T, ...baseTestArgs: unknown[]) => Promise<void> | void],
     ) => (
-      target(title ? `${title} - ${name}` : name, async () => {
+      target.call(thisArg, title ? `${title} - ${name}` : name, async (...baseTestArgs) => {
         const finishList: [Promise<void>[], () => void][] = [];
         const fixtures = await fixturesList.reduce(
           async (initializing, init) => {
@@ -91,7 +101,7 @@ const wrapTest = <T extends KeyValue, Base extends BaseTest>(
           },
           Promise.resolve({}),
         ) as T;
-        await inner(fixtures);
+        await inner.call(thisArg, fixtures, ...baseTestArgs);
         await finishList.reduceRight(
           async (finishing: Promise<void>, [finishJobs, finishFunc]) => {
             await finishing;
@@ -106,8 +116,9 @@ const wrapTest = <T extends KeyValue, Base extends BaseTest>(
     [key in keyof Base]: Base[key];
   } & {
     (
+      this: ThisParameterType<Parameters<Base>[1]>,
       name: string,
-      inner: (fixtures: T) => Promise<void> | void
+      inner: (fixtures: T, ...baseArgs: Parameters<Parameters<Base>[1]>) => Promise<void> | void
     ): ReturnType<Base>;
   };
 
@@ -123,7 +134,7 @@ const wrapTest = <T extends KeyValue, Base extends BaseTest>(
         parsedTitle = '';
       }
       return wrapTest<T & U, Base>(
-        proxy,
+        baseTest,
         parsedTitle,
         [...fixturesList, parsedFixtures] as Fixtures<Partial<T & U>>[],
       );
@@ -131,8 +142,9 @@ const wrapTest = <T extends KeyValue, Base extends BaseTest>(
   });
 };
 
-const wrap = <Base extends BaseTest>(
+const wrap = <Base extends BaseTest = BaseTest>(
   baseTest: Base,
-): Test<Record<string, unknown>, Base> => wrapTest(baseTest, '', []);
+  // eslint-disable-next-line @typescript-eslint/ban-types
+): Test<{}, Base> => wrapTest(baseTest, '', []);
 
 export default wrap;
