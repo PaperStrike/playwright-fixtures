@@ -66,7 +66,7 @@ const prepareFixtures = async <T extends KeyValue, Args extends KeyValue>(
   return [{ ...base, ...extend as T }, finishJobs, useResolve!];
 };
 
-const wrap = <T extends KeyValue, Base extends BaseTest>(
+const wrapTest = <T extends KeyValue, Base extends BaseTest>(
   baseTest: Base,
   title: string,
   fixturesList: Fixtures<Partial<T>>[],
@@ -122,7 +122,7 @@ const wrap = <T extends KeyValue, Base extends BaseTest>(
         parsedFixtures = parsedTitle;
         parsedTitle = '';
       }
-      return wrap<T & U, Base>(
+      return wrapTest<T & U, Base>(
         proxy,
         parsedTitle,
         [...fixturesList, parsedFixtures] as Fixtures<Partial<T & U>>[],
@@ -130,5 +130,9 @@ const wrap = <T extends KeyValue, Base extends BaseTest>(
     },
   });
 };
+
+const wrap = <Base extends BaseTest>(
+  baseTest: Base,
+): Test<Record<string, unknown>, Base> => wrapTest(baseTest, '', []);
 
 export default wrap;
