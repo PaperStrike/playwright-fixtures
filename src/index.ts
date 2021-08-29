@@ -21,11 +21,7 @@ type Test<TestArgs extends KeyValue, B extends BaseTest> = {
 } & {
   (
     name: string,
-    inner: (
-      this: ThisParameterType<Parameters<B>[1]>,
-      args: TestArgs,
-      ...baseArgs: Parameters<Parameters<B>[1]>
-    ) => Promise<void> | void,
+    inner: (args: TestArgs, ...baseArgs: Parameters<Parameters<B>[1]>) => Promise<void> | void,
   ): void;
   // eslint-disable-next-line @typescript-eslint/ban-types
   extend<T extends KeyValue = {}>(
