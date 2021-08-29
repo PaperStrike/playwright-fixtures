@@ -1,11 +1,11 @@
-# test-fixtures-wrap
+# playwright-fixtures
 
-[![npm Package](https://img.shields.io/npm/v/test-fixtures-wrap?logo=npm "test-fixtures-wrap")](https://www.npmjs.com/package/test-fixtures-wrap)
+[![npm Package](https://img.shields.io/npm/v/playwright-fixtures?logo=npm "playwright-fixtures")](https://www.npmjs.com/package/playwright-fixtures)
 
 Wrap your tests with Playwright-like Test Fixtures in node or browsers.
 
 ```shell
-npm install test-fixtures-wrap --save-dev
+npm install playwright-fixtures --save-dev
 ```
 
 ---
@@ -124,7 +124,7 @@ Use it like:
 
 ```ts
 import { test as base } from 'uvu'; // mocha, tape, zora, etc.
-import fixtureWrap from 'test-fixtures-wrap';
+import fixtureWrap from 'playwright-fixtures';
 const test = fixtureWrap(base);
 
 test('your tests', () => {

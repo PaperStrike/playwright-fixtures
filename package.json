@@ -1,5 +1,5 @@
 {
-  "name": "test-fixtures-wrap",
+  "name": "playwright-fixtures",
   "version": "0.1.1",
   "description": "Wrap your tests with Playwright-like Test Fixtures",
   "keywords": [
@@ -13,7 +13,7 @@
   "author": "PaperStrike",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "repository": "github:PaperStrike/test-fixtures-wrap",
+  "repository": "github:PaperStrike/playwright-fixtures",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepare": "tsc"
