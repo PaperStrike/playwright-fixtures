@@ -16,22 +16,22 @@ type Fixtures<T extends KeyValue, PT extends KeyValue = {}> = {
 
 type BaseTest = (name: string, inner: (...args: unknown[]) => Promise<void> | void) => unknown;
 
-type Test<TestArgs extends KeyValue, B extends BaseTest> = {
+type Test<Args extends KeyValue, B extends BaseTest> = {
   [key in keyof B]: B[key];
 } & {
   (
     name: string,
-    inner: (args: TestArgs, ...baseArgs: Parameters<Parameters<B>[1]>) => Promise<void> | void,
+    inner: (args: Args, ...baseArgs: Parameters<Parameters<B>[1]>) => Promise<void> | void,
   ): void;
   // eslint-disable-next-line @typescript-eslint/ban-types
   extend<T extends KeyValue = {}>(
-    fixtures: Fixtures<T, TestArgs>
-  ): Test<TestArgs & T, B>;
+    fixtures: Fixtures<T, Args>
+  ): Test<Args & T, B>;
   // eslint-disable-next-line @typescript-eslint/ban-types
   extend<T extends KeyValue = {}>(
     title: string,
-    fixtures: Fixtures<T, TestArgs>
-  ): Test<TestArgs & T, B>;
+    fixtures: Fixtures<T, Args>
+  ): Test<Args & T, B>;
 };
 
 const prepareFixtures = async <T extends KeyValue, Args extends KeyValue>(
@@ -75,11 +75,11 @@ const prepareFixtures = async <T extends KeyValue, Args extends KeyValue>(
   return [{ ...base, ...extend as T }, finishJobs, useResolve!];
 };
 
-const wrapTest = <T extends KeyValue, Base extends BaseTest>(
-  baseTest: Base,
+const wrapTest = <T extends KeyValue, B extends BaseTest>(
+  baseTest: B,
   title: string,
   fixturesList: Fixtures<Partial<T>>[],
-): Test<T, Base> => {
+): Test<T, B> => {
   const proxy = new Proxy(baseTest, {
     apply: (
       target,
@@ -112,13 +112,13 @@ const wrapTest = <T extends KeyValue, Base extends BaseTest>(
       })
     ),
   }) as {
-    [key in keyof Base]: Base[key];
+    [key in keyof B]: B[key];
   } & {
     (
-      this: ThisParameterType<Parameters<Base>[1]>,
+      this: ThisParameterType<Parameters<B>[1]>,
       name: string,
-      inner: (fixtures: T, ...baseArgs: Parameters<Parameters<Base>[1]>) => Promise<void> | void
-    ): ReturnType<Base>;
+      inner: (fixtures: T, ...baseArgs: Parameters<Parameters<B>[1]>) => Promise<void> | void
+    ): ReturnType<B>;
   };
 
   return Object.assign(proxy, {
@@ -132,7 +132,7 @@ const wrapTest = <T extends KeyValue, Base extends BaseTest>(
         parsedFixtures = parsedTitle;
         parsedTitle = '';
       }
-      return wrapTest<T & U, Base>(
+      return wrapTest<T & U, B>(
         baseTest,
         parsedTitle,
         [...fixturesList, parsedFixtures] as Fixtures<Partial<T & U>>[],
@@ -141,9 +141,9 @@ const wrapTest = <T extends KeyValue, Base extends BaseTest>(
   });
 };
 
-const wrap = <Base extends BaseTest = BaseTest>(
-  baseTest: Base,
+const wrap = <B extends BaseTest = BaseTest>(
+  baseTest: B,
   // eslint-disable-next-line @typescript-eslint/ban-types
-): Test<{}, Base> => wrapTest(baseTest, '', []);
+): Test<{}, B> => wrapTest(baseTest, '', []);
 
 export default wrap;

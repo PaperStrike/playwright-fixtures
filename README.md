@@ -32,20 +32,20 @@ The test you get from this wrapper. All properties in the base test will be pres
 
 ```ts
 type KeyValue = Record<string, unknown>;
-type Test<TestArgs extends KeyValue, B extends BaseTest> = {
+type Test<Args extends KeyValue, B extends BaseTest> = {
   [key in keyof B]: B[key];
 } & {
   (
     name: string,
-    inner: (args: TestArgs, ...baseArgs: Parameters<Parameters<B>[1]>) => Promise<void> | void,
+    inner: (args: Args, ...baseArgs: Parameters<Parameters<B>[1]>) => Promise<void> | void,
   ): void;
   extend<T extends KeyValue = {}>(
-    fixtures: Fixtures<T, TestArgs>
-  ): Test<TestArgs & T, B>;
+    fixtures: Fixtures<T, Args>
+  ): Test<Args & T, B>;
   extend<T extends KeyValue = {}>(
     title: string,
-    fixtures: Fixtures<T, TestArgs>
-  ): Test<TestArgs & T, B>;
+    fixtures: Fixtures<T, Args>
+  ): Test<Args & T, B>;
 };
 ```
 
@@ -116,7 +116,7 @@ The report format totally depends on your base test. This wrapper only change th
 The wrap function. Accepts one single argument, the base test. Returns the wrapped test.
 
 ```ts
-declare const wrap: <Base extends BaseTest = BaseTest>(baseTest: Base) => Test<{}, Base>;
+declare const wrap: <B extends BaseTest = BaseTest>(baseTest: B) => Test<{}, B>;
 export default wrap;
 ```
 
