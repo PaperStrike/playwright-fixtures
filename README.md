@@ -28,7 +28,7 @@ type BaseTest = (name: string, inner: (...args: unknown[]) => Promise<void> | vo
 
 ### Type Test
 
-The test you get from this wrapper. All properties in the base test will be preserved, while the call signatures will be replaced.
+The test you get from this wrapper. All properties in the base test are retained, and the call signature is replaced.
 
 ```ts
 type KeyValue = Record<string, unknown>;
@@ -51,7 +51,7 @@ type Test<Args extends KeyValue, B extends BaseTest> = {
 
 #### Method extend
 
-Extend fixtures like you do in playwright. Parameters given by the base test will move right one position for it.
+Extend fixtures like you do in Playwright. Parameters given by the base test will move right one position for it.
 
 Example on [tape](https://github.com/substack/tape):
 
@@ -109,7 +109,7 @@ ok 2 should be strictly equal
 # ...
 ```
 
-The report format totally depends on your base test. This wrapper only change the test names to `${title} - ${name}`.
+The report format depends entirely on your base test. This wrapper only changes the test name to `${title} - ${name}`.
 
 ### Entry
 
