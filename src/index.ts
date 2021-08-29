@@ -67,6 +67,9 @@ const prepareFixtures = async <T extends KeyValue, Args extends KeyValue>(
             Promise.resolve((fixtureValue as TestFixture<T[K], Args>)(base, useValue))
               .then(prepareValueResolve),
           );
+        } else {
+          extend[key] = fixtureValue as T[K];
+          prepareValueResolve();
         }
       })
     ));
