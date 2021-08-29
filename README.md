@@ -20,7 +20,7 @@ For more information, check [Advanced: fixtures | Playwright][playwright-docs-te
 
 ### Type BaseTest
 
-Supported base tests. Basically, tests that accepts a string as its name and a test function that could return a promise.
+Supported base tests. Generally, tests that accepts a string (as its name) and a function that can return a promise.
 
 ```ts
 type BaseTest = (name: string, inner: (...args: unknown[]) => Promise<void> | void) => unknown;
