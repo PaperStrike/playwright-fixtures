@@ -18,6 +18,14 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "prepare": "tsc"
   },
+  "files": [
+    "dist",
+    "src",
+    "tsconfig.json",
+    "*.config.*",
+    ".eslintrc.*",
+    "CHANGELOG.*"
+  ],
   "devDependencies": {
     "@typescript-eslint/eslint-plugin": "^4.29.3",
     "@typescript-eslint/parser": "^4.29.3",
