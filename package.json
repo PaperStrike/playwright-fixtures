@@ -1,7 +1,7 @@
 {
   "name": "playwright-fixtures",
   "version": "0.2.0",
-  "description": "Wrap your tests with Playwright-like Test Fixtures",
+  "description": "Wrap your tests with Playwright-like test fixtures in node & browsers",
   "keywords": [
     "test",
     "fixture",
