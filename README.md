@@ -2,7 +2,7 @@
 
 [![npm Package](https://img.shields.io/npm/v/test-fixtures-wrap?logo=npm "test-fixtures-wrap")](https://www.npmjs.com/package/test-fixtures-wrap)
 
-Wrap your tests with playwright-like test fixtures in node or browsers.
+Wrap your tests with Playwright-like Test Fixtures in node or browsers.
 
 ```shell
 npm install test-fixtures-wrap --save-dev
@@ -10,7 +10,7 @@ npm install test-fixtures-wrap --save-dev
 
 ---
 
-Playwright Test is based on the concept of the _test fixtures_. Test fixtures are used to establish environment for each test, giving the test everything it needs and nothing else.
+Playwright Test is based on the concept of the test fixtures. Test fixtures are used to establish environment for each test, giving the test everything it needs and nothing else.
 
 For more information, check [Advanced: fixtures | Playwright][playwright-docs-test-fixtures].
 

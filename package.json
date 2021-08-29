@@ -1,7 +1,7 @@
 {
   "name": "test-fixtures-wrap",
   "version": "0.1.0",
-  "description": "Wrap your tests with playwright-like test fixtures",
+  "description": "Wrap your tests with Playwright-like Test Fixtures",
   "keywords": [
     "test",
     "fixture",
