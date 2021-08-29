@@ -116,7 +116,8 @@ The report format totally depends on your base test. This wrapper only change th
 The wrap function. Accepts one single argument, the base test. Returns the wrapped test.
 
 ```ts
-export default function wrap<Base extends BaseTest>(baseTest: Base): Test<Record<string, unknown>, Base>
+declare const wrap: <Base extends BaseTest = BaseTest>(baseTest: Base) => Test<{}, Base>;
+export default wrap;
 ```
 
 Use it like:
