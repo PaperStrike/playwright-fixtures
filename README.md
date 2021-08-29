@@ -1,5 +1,7 @@
 # test-fixtures-wrap
 
+[![npm Package](https://img.shields.io/npm/v/test-fixtures-wrap?logo=npm "test-fixtures-wrap")](https://www.npmjs.com/package/test-fixtures-wrap)
+
 Wrap your tests with playwright-like test fixtures in node or browsers.
 
 ```shell
