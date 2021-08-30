@@ -8,11 +8,11 @@ Wrap your tests with Playwright-like test fixtures in node & browsers.
 npm install playwright-fixtures --save-dev
 ```
 
----
+> Playwright Test is based on the concept of the test fixtures. Test fixtures are used to establish environment for each test, giving the test everything it needs and nothing else.
+>
+> For more information, check [Advanced: fixtures | Playwright][playwright-docs-test-fixtures].
 
-Playwright Test is based on the concept of the test fixtures. Test fixtures are used to establish environment for each test, giving the test everything it needs and nothing else.
-
-For more information, check [Advanced: fixtures | Playwright][playwright-docs-test-fixtures].
+🐿️ Jump to [Entry](#entry).
 
 [playwright-docs-test-fixtures]: https://playwright.dev/docs/test-fixtures/
 
