@@ -11,7 +11,7 @@ type TestFixtureValue<R, Args extends KeyValue> = R | TestFixture<R, Args>;
 type Fixtures<T extends KeyValue, PT extends KeyValue = {}> = {
   [K in keyof PT]?: TestFixtureValue<PT[K], PT & T>;
 } & {
-  [K in keyof T]?: TestFixtureValue<T[K], PT & T>;
+  [K in keyof T]: TestFixtureValue<T[K], PT & T>;
 };
 
 type BaseTest = (name: string, inner: (...args: unknown[]) => Promise<void> | void) => unknown;
@@ -75,16 +75,16 @@ const prepareFixtures = async <T extends KeyValue, Args extends KeyValue>(
   return [{ ...base, ...extend as T }, finishJobs, useResolve!];
 };
 
-const wrapTest = <T extends KeyValue, B extends BaseTest>(
+const wrapTest = <Args extends KeyValue, B extends BaseTest>(
   baseTest: B,
   title: string,
-  fixturesList: Fixtures<Partial<T>>[],
-): Test<T, B> => {
+  fixturesList: Fixtures<Partial<Args>>[],
+): Test<Args, B> => {
   const proxy = new Proxy(baseTest, {
     apply: (
       target,
       thisArg,
-      [name, inner]: [string, (fixtures: T, ...baseTestArgs: unknown[]) => Promise<void> | void],
+      [name, inner]: [string, (fixtures: Args, ...baseTestArgs: unknown[]) => Promise<void> | void],
     ) => (
       target.call(thisArg, title ? `${title} - ${name}` : name, async (...baseTestArgs) => {
         const finishList: [Promise<void>[], () => void][] = [];
@@ -99,7 +99,7 @@ const wrapTest = <T extends KeyValue, B extends BaseTest>(
             return initialized;
           },
           Promise.resolve({}),
-        ) as T;
+        ) as Args;
         await inner.call(thisArg, fixtures, ...baseTestArgs);
         await finishList.reduceRight(
           async (finishing: Promise<void>, [finishJobs, finishFunc]) => {
@@ -117,25 +117,26 @@ const wrapTest = <T extends KeyValue, B extends BaseTest>(
     (
       this: ThisParameterType<Parameters<B>[1]>,
       name: string,
-      inner: (fixtures: T, ...baseArgs: Parameters<Parameters<B>[1]>) => Promise<void> | void
+      inner: (fixtures: Args, ...baseArgs: Parameters<Parameters<B>[1]>) => Promise<void> | void
     ): ReturnType<B>;
   };
 
   return Object.assign(proxy, {
     extend<U extends KeyValue>(
-      extendTitle: string | Fixtures<U, T>,
-      extendFixtures: Fixtures<U, T> = {},
-    ) {
+      extendTitle: string | Fixtures<U, Args>,
+      extendFixtures?: Fixtures<U, Args>,
+    ): Test<Args & U, B> {
       let parsedTitle = extendTitle;
       let parsedFixtures = extendFixtures;
       if (typeof parsedTitle !== 'string') {
         parsedFixtures = parsedTitle;
         parsedTitle = '';
       }
-      return wrapTest<T & U, B>(
+      if (!parsedFixtures) throw new TypeError('No fixtures provided');
+      return wrapTest<Args & U, B>(
         baseTest,
         parsedTitle,
-        [...fixturesList, parsedFixtures] as Fixtures<Partial<T & U>>[],
+        [...fixturesList, parsedFixtures] as Fixtures<Partial<Args & U>>[],
       );
     },
   });
