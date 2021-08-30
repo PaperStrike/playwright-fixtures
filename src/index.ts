@@ -50,7 +50,7 @@ const prepareFixtures = async <T extends KeyValue, Args extends KeyValue>(
       new Promise<void>((prepareValueResolve) => {
         /**
          * Check if it is callable.
-         * There isn't more standard and fast ways.
+         * Hard to be reliable and fast at the same time.
          */
         if (typeof fixtureValue === 'function') {
           const useValue = async (value: T[K]) => {
@@ -100,15 +100,18 @@ const wrapTest = <Args extends KeyValue, B extends BaseTest>(
           },
           Promise.resolve({}),
         ) as Args;
-        await inner.call(thisArg, fixtures, ...baseTestArgs);
-        await finishList.reduceRight(
-          async (finishing: Promise<void>, [finishJobs, finishFunc]) => {
-            await finishing;
-            finishFunc();
-            await Promise.all(finishJobs);
-          },
-          Promise.resolve(),
-        );
+        try {
+          await inner.call(thisArg, fixtures, ...baseTestArgs);
+        } finally {
+          await finishList.reduceRight(
+            async (finishing: Promise<void>, [finishJobs, finishFunc]) => {
+              await finishing;
+              finishFunc();
+              await Promise.all(finishJobs);
+            },
+            Promise.resolve(),
+          );
+        }
       })
     ),
   }) as {
