@@ -22,7 +22,7 @@ type Test<Args extends KeyValue, B extends BaseTest> = {
   (
     name: string,
     inner: (args: Args, ...baseArgs: Parameters<Parameters<B>[1]>) => Promise<void> | void,
-  ): void;
+  ): ReturnType<B>;
   // eslint-disable-next-line @typescript-eslint/ban-types
   extend<T extends KeyValue = {}>(
     fixtures: Fixtures<T, Args>
