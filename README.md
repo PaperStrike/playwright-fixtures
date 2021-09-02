@@ -42,10 +42,6 @@ type Test<Args extends KeyValue, B extends BaseTest> = {
   extend<T extends KeyValue = {}>(
     fixtures: Fixtures<T, Args>
   ): Test<Args & T, B>;
-  extend<T extends KeyValue = {}>(
-    title: string,
-    fixtures: Fixtures<T, Args>
-  ): Test<Args & T, B>;
 };
 ```
 
@@ -74,42 +70,14 @@ inputTest('focusable', ({ input }, t) => {
 });
 ```
 
-Optionally, pass a string to prepend a title for the extended tests.
-
-```ts
-type TestFixtures = {
-  button: HTMLButtonElement;
-};
-const buttonTest = test.extend<TestFixtures>('button', {
-  button: async (baseFixtures, use) => {
-    const button = document.createElement('button');
-    document.body.append(button);
-    await use(button);
-    button.remove();
-  },
-});
-buttonTest('inline-block', ({ button }, t) => {
-  const { display } = window.getComputedStyle(button);
-  t.equal(display, 'inline-block');
-  t.end();
-});
-buttonTest('focusable', ({ button }, t) => {
-  button.focus();
-  t.equal(document.activeElement, button);
-  t.end();
-});
-```
-
 ```tap
 TAP version 13
-# button - inline-block
+# focusable
 ok 1 should be strictly equal
-# button - focusable
-ok 2 should be strictly equal
 # ...
 ```
 
-The report format depends entirely on your base test. This wrapper only changes the test name to `${title} - ${name}`.
+The report format depends entirely on your base test.
 
 ### Entry
 

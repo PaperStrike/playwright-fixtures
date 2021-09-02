@@ -27,11 +27,6 @@ type Test<Args extends KeyValue, B extends BaseTest> = {
   extend<T extends KeyValue = {}>(
     fixtures: Fixtures<T, Args>
   ): Test<Args & T, B>;
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  extend<T extends KeyValue = {}>(
-    title: string,
-    fixtures: Fixtures<T, Args>
-  ): Test<Args & T, B>;
 };
 
 const prepareFixtures = async <T extends KeyValue, Args extends KeyValue>(
@@ -77,7 +72,6 @@ const prepareFixtures = async <T extends KeyValue, Args extends KeyValue>(
 
 const wrapTest = <Args extends KeyValue, B extends BaseTest>(
   baseTest: B,
-  title: string,
   fixturesList: Fixtures<Partial<Args>>[],
 ): Test<Args, B> => {
   const proxy = new Proxy(baseTest, {
@@ -86,7 +80,7 @@ const wrapTest = <Args extends KeyValue, B extends BaseTest>(
       thisArg,
       [name, inner]: [string, (fixtures: Args, ...baseTestArgs: unknown[]) => Promise<void> | void],
     ) => (
-      target.call(thisArg, title ? `${title} - ${name}` : name, async (...baseTestArgs) => {
+      target.call(thisArg, name, async (...baseTestArgs) => {
         const finishList: [Promise<void>[], () => void][] = [];
         const fixtures = await fixturesList.reduce(
           async (initializing, init) => {
@@ -126,20 +120,11 @@ const wrapTest = <Args extends KeyValue, B extends BaseTest>(
 
   return Object.assign(proxy, {
     extend<U extends KeyValue>(
-      extendTitle: string | Fixtures<U, Args>,
-      extendFixtures?: Fixtures<U, Args>,
+      fixtures: Fixtures<U, Args>,
     ): Test<Args & U, B> {
-      let parsedTitle = extendTitle;
-      let parsedFixtures = extendFixtures;
-      if (typeof parsedTitle !== 'string') {
-        parsedFixtures = parsedTitle;
-        parsedTitle = '';
-      }
-      if (!parsedFixtures) throw new TypeError('No fixtures provided');
       return wrapTest<Args & U, B>(
         baseTest,
-        parsedTitle,
-        [...fixturesList, parsedFixtures] as Fixtures<Partial<Args & U>>[],
+        [...fixturesList, fixtures] as Fixtures<Partial<Args & U>>[],
       );
     },
   });
@@ -148,6 +133,6 @@ const wrapTest = <Args extends KeyValue, B extends BaseTest>(
 const wrap = <B extends BaseTest = BaseTest>(
   baseTest: B,
   // eslint-disable-next-line @typescript-eslint/ban-types
-): Test<{}, B> => wrapTest(baseTest, '', []);
+): Test<{}, B> => wrapTest(baseTest, []);
 
 export default wrap;
