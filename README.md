@@ -32,9 +32,7 @@ The test you get from this wrapper. All properties in the base test are retained
 
 ```ts
 type KeyValue = Record<string, unknown>;
-type Test<Args extends KeyValue, B extends BaseTest> = {
-  [key in keyof B]: B[key];
-} & {
+type Test<Args extends KeyValue, B extends BaseTest> = Pick<B, keyof B> & {
   (
     name: string,
     inner: (args: Args, ...baseArgs: Parameters<Parameters<B>[1]>) => Promise<void> | void,

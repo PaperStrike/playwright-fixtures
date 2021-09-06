@@ -1,8 +1,8 @@
-type KeyValue = { [key: string]: unknown };
+type KeyValue = Record<string, unknown>;
 
 type TestFixture<R, Args extends KeyValue> = (
   args: Args,
-  use: (r: R) => Promise<void>
+  use: (r: R) => Promise<void>,
 ) => Promise<void> | void;
 
 type TestFixtureValue<R, Args extends KeyValue> = R | TestFixture<R, Args>;
@@ -16,16 +16,14 @@ type Fixtures<T extends KeyValue, PT extends KeyValue = {}> = {
 
 type BaseTest = (name: string, inner: (...args: unknown[]) => Promise<void> | void) => unknown;
 
-type Test<Args extends KeyValue, B extends BaseTest> = {
-  [key in keyof B]: B[key];
-} & {
+type Test<Args extends KeyValue, B extends BaseTest> = Pick<B, keyof B> & {
   (
     name: string,
     inner: (args: Args, ...baseArgs: Parameters<Parameters<B>[1]>) => Promise<void> | void,
   ): ReturnType<B>;
   // eslint-disable-next-line @typescript-eslint/ban-types
   extend<T extends KeyValue = {}>(
-    fixtures: Fixtures<T, Args>
+    fixtures: Fixtures<T, Args>,
   ): Test<Args & T, B>;
 };
 
@@ -55,7 +53,7 @@ const prepareFixtures = async <T extends KeyValue, Args extends KeyValue>(
           };
           finishJobs.push(
             // Package to promise, another resolve in case of it dont use `useValue`.
-            Promise.resolve((fixtureValue as TestFixture<T[K], Args>)(base, useValue))
+            Promise.resolve(fixtureValue(base, useValue))
               .then(prepareValueResolve),
           );
         } else {
@@ -108,13 +106,11 @@ const wrapTest = <Args extends KeyValue, B extends BaseTest>(
         }
       })
     ),
-  }) as {
-    [key in keyof B]: B[key];
-  } & {
+  }) as Pick<B, keyof B> & {
     (
       this: ThisParameterType<Parameters<B>[1]>,
       name: string,
-      inner: (fixtures: Args, ...baseArgs: Parameters<Parameters<B>[1]>) => Promise<void> | void
+      inner: (fixtures: Args, ...baseArgs: Parameters<Parameters<B>[1]>) => Promise<void> | void,
     ): ReturnType<B>;
   };
 
