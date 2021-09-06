@@ -31,17 +31,27 @@ type Test<Args extends KeyValue, B extends BaseTest> = Pick<B, keyof B> & {
   ): Test<Args & T, B>;
 };
 
+/**
+ * Resolve fixture values, and returns the resolved values,
+ * a callback to start cleaning jobs, and the promises of the cleaning jobs.
+ */
 const prepareFixtures = async <T extends KeyValue, PT extends KeyValue>(
   base: PT,
   init: Fixtures<T, PT>,
-): Promise<[PT & T, Promise<void>[], () => void]> => {
+): Promise<[PT & T, () => void, Promise<void>[]]> => {
   const extend: Partial<T> = {};
+
+  // The cleaning starter, called after the inner test and all sub-level fixtures are finished.
   let useResolve: () => void;
   let usePromise: Promise<void>;
   await new Promise<void>((construct) => {
     usePromise = new Promise<void>((resolve) => { useResolve = resolve; construct(); });
   });
+
+  // The promises of the cleaning jobs.
   const finishJobs: Promise<void>[] = [];
+
+  // Resolve fixture values.
   const prepareJobs = Object.entries(init)
     .map(<K extends keyof T>([key, fixtureValue]: [K, FixtureValue<T[K], PT & T>]) => (
       new Promise<void>((prepareValueResolve) => {
@@ -61,7 +71,7 @@ const prepareFixtures = async <T extends KeyValue, PT extends KeyValue>(
              * Package to promise, chain with another resolve in case of
              * the fixture function finishes without using `useValue`.
              *
-             * Assert `extend` type `T` to make it possible for users to use peer fixtures
+             * Specify the type of `extend` as `T` to allow users to use sibling fixtures
              * as in Playwright's official docs.
              * @TODO filter out constants before handling these fixture functions.
              * @see [Test fixtures - Advanced: fixtures | Playwright]{@link https://playwright.dev/docs/test-fixtures/#overriding-fixtures}
@@ -78,13 +88,14 @@ const prepareFixtures = async <T extends KeyValue, PT extends KeyValue>(
   await Promise.all(prepareJobs);
 
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
-  return [{ ...base, ...extend as T }, finishJobs, useResolve!];
+  return [{ ...base, ...extend as T }, useResolve!, finishJobs];
 };
 
 const wrapTest = <Args extends KeyValue, B extends BaseTest>(
   baseTest: B,
   fixturesList: Fixtures<Partial<Args>>[],
 ): Test<Args, B> => {
+  // Proxy the call signature.
   const proxy = new Proxy(baseTest, {
     apply: (
       target,
@@ -92,24 +103,27 @@ const wrapTest = <Args extends KeyValue, B extends BaseTest>(
       [name, inner]: [string, (fixtures: Args, ...baseTestArgs: unknown[]) => Promise<void> | void],
     ) => (
       target.call(thisArg, name, async (...baseTestArgs) => {
-        const finishList: [Promise<void>[], () => void][] = [];
+        const finishList: [() => void, Promise<void>[]][] = [];
         const fixtures = await fixturesList.reduce(
           async (initializing, init) => {
             const [
               initialized,
-              finishJobs,
               finishFunc,
+              finishJobs,
             ] = await prepareFixtures(await initializing, init);
-            finishList.push([finishJobs, finishFunc]);
+            finishList.push([finishFunc, finishJobs]);
             return initialized;
           },
           Promise.resolve({}),
         ) as Args;
+
+        // A try block to avoid inner errors blocking the cleaning jobs.
         try {
           await inner.call(thisArg, fixtures, ...baseTestArgs);
         } finally {
+          // Start the cleaning jobs, from sub-level fixtures to parent fixtures.
           await finishList.reduceRight(
-            async (finishing: Promise<void>, [finishJobs, finishFunc]) => {
+            async (finishing: Promise<void>, [finishFunc, finishJobs]) => {
               await finishing;
               finishFunc();
               await Promise.all(finishJobs);
@@ -127,6 +141,7 @@ const wrapTest = <Args extends KeyValue, B extends BaseTest>(
     ): ReturnType<B>;
   };
 
+  // Assign the `extend` method.
   return Object.assign(proxy, {
     extend<U extends KeyValue>(
       fixtures: Fixtures<U, Args>,
