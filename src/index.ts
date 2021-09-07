@@ -1,15 +1,14 @@
-type KeyValue = {
-  // Everything other than functions.
-  // eslint-disable-next-line @typescript-eslint/ban-types, @typescript-eslint/no-explicit-any
-  [K: string]: string | number | boolean | any[] | null | undefined | bigint | symbol | void | {};
-};
+type KeyValue = Record<string, unknown>;
 
 type FixtureFunction<R, Args extends KeyValue> = (
   args: Args,
   use: (r: R) => Promise<void>,
 ) => Promise<void> | void;
 
-type FixtureValue<R, Args extends KeyValue> = R | FixtureFunction<R, Args>;
+// eslint-disable-next-line @typescript-eslint/ban-types
+type FixtureValue<R, Args extends KeyValue> = R extends Function
+  ? FixtureFunction<R, Args>
+  : (FixtureFunction<R, Args> | R);
 
 // eslint-disable-next-line @typescript-eslint/ban-types
 type Fixtures<T extends KeyValue, PT extends KeyValue = {}> = {
@@ -76,11 +75,15 @@ const prepareFixtures = async <T extends KeyValue, PT extends KeyValue>(
              * @TODO filter out constants before handling these fixture functions.
              * @see [Test fixtures - Advanced: fixtures | Playwright]{@link https://playwright.dev/docs/test-fixtures/#overriding-fixtures}
              */
-            Promise.resolve(fixtureValue({ ...base, ...extend as T }, useValue))
+            Promise
+              .resolve((fixtureValue as FixtureFunction<T[K], PT & T>)(
+                { ...base, ...extend as T },
+                useValue,
+              ))
               .then(prepareValueResolve),
           );
         } else {
-          extend[key] = fixtureValue;
+          extend[key] = fixtureValue as T[K];
           prepareValueResolve();
         }
       })

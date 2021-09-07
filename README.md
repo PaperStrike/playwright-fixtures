@@ -31,10 +31,7 @@ type BaseTest = (name: string, inner: (...args: unknown[]) => Promise<void> | vo
 The test you get from this wrapper. All properties in the base test are retained, and the call signature is replaced.
 
 ```ts
-type KeyValue = {
-  // Everything other than functions.
-  [K: string]: string | number | boolean | any[] | null | undefined | bigint | symbol | void | {};
-};
+type KeyValue = Record<string, unknown>;
 type Test<Args extends KeyValue, B extends BaseTest> = Pick<B, keyof B> & {
   (
     name: string,
