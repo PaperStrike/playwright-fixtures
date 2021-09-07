@@ -32,13 +32,16 @@ The test you get from this wrapper. All properties in the base test are retained
 
 ```ts
 type KeyValue = Record<string, unknown>;
-type Test<Args extends KeyValue, B extends BaseTest> = Pick<B, keyof B> & {
-  (
-    name: string,
-    inner: (args: Args, ...baseArgs: Parameters<Parameters<B>[1]>) => Promise<void> | void,
-  ): ReturnType<B>;
+
+type TestCall<Args extends KeyValue, B extends BaseTest> =
+  B extends (name: string, inner: (...args: infer BaseArgs) => infer InnerReturn) => infer Return
+    ? (name: string, inner: (args: Args, ...baseArgs: BaseArgs) => InnerReturn) => Return
+    : never;
+
+type Test<Args extends KeyValue, B extends BaseTest> = Pick<B, keyof B> & TestCall<Args, B> & {
+  // eslint-disable-next-line @typescript-eslint/ban-types
   extend<T extends KeyValue = {}>(
-    fixtures: Fixtures<T, Args>
+    fixtures: Fixtures<T, Args>,
   ): Test<Args & T, B>;
 };
 ```

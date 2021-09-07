@@ -19,11 +19,12 @@ type Fixtures<T extends KeyValue, PT extends KeyValue = {}> = {
 
 type BaseTest = (name: string, inner: (...args: unknown[]) => Promise<void> | void) => unknown;
 
-type Test<Args extends KeyValue, B extends BaseTest> = Pick<B, keyof B> & {
-  (
-    name: string,
-    inner: (args: Args, ...baseArgs: Parameters<Parameters<B>[1]>) => Promise<void> | void,
-  ): ReturnType<B>;
+type TestCall<Args extends KeyValue, B extends BaseTest> =
+  B extends (name: string, inner: (...args: infer BaseArgs) => infer InnerReturn) => infer Return
+    ? (name: string, inner: (args: Args, ...baseArgs: BaseArgs) => InnerReturn) => Return
+    : never;
+
+type Test<Args extends KeyValue, B extends BaseTest> = Pick<B, keyof B> & TestCall<Args, B> & {
   // eslint-disable-next-line @typescript-eslint/ban-types
   extend<T extends KeyValue = {}>(
     fixtures: Fixtures<T, Args>,
@@ -136,13 +137,7 @@ const wrapTest = <Args extends KeyValue, B extends BaseTest>(
         }
       })
     ),
-  }) as Pick<B, keyof B> & {
-    (
-      this: ThisParameterType<Parameters<B>[1]>,
-      name: string,
-      inner: (fixtures: Args, ...baseArgs: Parameters<Parameters<B>[1]>) => Promise<void> | void,
-    ): ReturnType<B>;
-  };
+  }) as Pick<B, keyof B> & TestCall<Args, B>;
 
   // Assign the `extend` method.
   return Object.assign(proxy, {
