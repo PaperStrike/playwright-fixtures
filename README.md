@@ -39,7 +39,6 @@ type TestCall<Args extends KeyValue, B extends BaseTest> =
     : never;
 
 type Test<Args extends KeyValue, B extends BaseTest> = Pick<B, keyof B> & TestCall<Args, B> & {
-  // eslint-disable-next-line @typescript-eslint/ban-types
   extend<T extends KeyValue = {}>(
     fixtures: Fixtures<T, Args>,
   ): Test<Args & T, B>;
