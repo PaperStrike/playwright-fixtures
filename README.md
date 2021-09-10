@@ -23,7 +23,8 @@ npm install playwright-fixtures --save-dev
 Supported base tests. Generally, tests that accepts a string (as its name) and a function that can return a promise.
 
 ```ts
-type BaseTest = (name: string, inner: (...args: unknown[]) => Promise<void> | void) => unknown;
+export type BaseTest =
+  (name: string, inner: (...args: unknown[]) => Promise<void> | void) => unknown;
 ```
 
 ### Type Test

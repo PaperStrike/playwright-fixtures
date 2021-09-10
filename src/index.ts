@@ -17,7 +17,8 @@ type Fixtures<T extends KeyValue, PT extends KeyValue = {}> = {
   [K in keyof T]: FixtureValue<T[K], PT & T>;
 };
 
-type BaseTest = (name: string, inner: (...args: unknown[]) => Promise<void> | void) => unknown;
+export type BaseTest =
+  (name: string, inner: (...args: unknown[]) => Promise<void> | void) => unknown;
 
 type TestCall<Args extends KeyValue, B extends BaseTest> =
   B extends (name: string, inner: (...args: infer BaseArgs) => infer InnerReturn) => infer Return
