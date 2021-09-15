@@ -11,6 +11,7 @@
   "bugs": "https://github.com/PaperStrike/Pjax/issues",
   "license": "ISC",
   "author": "PaperStrike",
+  "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "repository": "github:PaperStrike/playwright-fixtures",
