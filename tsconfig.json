@@ -6,13 +6,13 @@
     "exactOptionalPropertyTypes": true,
     "forceConsistentCasingInFileNames": true,
     "lib": ["es2021"],
-    "module": "esnext",
+    "module": "commonjs",
     "moduleResolution": "node",
     "newLine": "lf",
     "outDir": "dist",
     "skipLibCheck": true,
     "strict": true,
-    "target": "es2021"
+    "target": "es2018"
   },
   "include": ["src"]
 }
