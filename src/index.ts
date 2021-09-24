@@ -99,9 +99,8 @@ const prepareFixtures = async <T extends KeyValue, PT extends KeyValue>(
 const wrapTest = <Args extends KeyValue, B extends BaseTest>(
   baseTest: B,
   fixturesList: Fixtures<Partial<Args>>[],
-): Test<Args, B> => {
-  // Proxy the call signature.
-  const proxy = new Proxy(baseTest, {
+): Test<Args, B> => new Proxy(baseTest, {
+    // The call signature.
     apply: (
       target,
       thisArg,
@@ -126,7 +125,7 @@ const wrapTest = <Args extends KeyValue, B extends BaseTest>(
         try {
           await inner.call(thisArg, fixtures, ...baseTestArgs);
         } finally {
-          // Start the cleaning jobs, from sub-level fixtures to parent fixtures.
+        // Start the cleaning jobs, from sub-level fixtures to parent fixtures.
           await finishList.reduceRight(
             async (finishing: Promise<void>, [finishFunc, finishJobs]) => {
               await finishing;
@@ -138,20 +137,19 @@ const wrapTest = <Args extends KeyValue, B extends BaseTest>(
         }
       })
     ),
-  }) as Pick<B, keyof B> & TestCall<Args, B>;
-
-  // Assign the `extend` method.
-  return Object.assign(proxy, {
-    extend<U extends KeyValue>(
-      fixtures: Fixtures<U, Args>,
-    ): Test<Args & U, B> {
-      return wrapTest<Args & U, B>(
-        baseTest,
-        [...fixturesList, fixtures] as Fixtures<Partial<Args & U>>[],
-      );
+    get(target, key) {
+      if (key === 'extend') {
+        // The `extend` method.
+        return <U extends KeyValue>(
+          fixtures: Fixtures<U, Args>,
+        ): Test<Args & U, B> => wrapTest<Args & U, B>(
+          baseTest,
+          [...fixturesList, fixtures] as Fixtures<Partial<Args & U>>[],
+        );
+      }
+      return target[key as keyof B];
     },
-  });
-};
+  }) as Test<Args, B>;
 
 const wrap = <B extends BaseTest = BaseTest>(
   baseTest: B,
